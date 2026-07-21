@@ -112,7 +112,7 @@ fn nist_acvp_hmac_sha224() {
         "6a47ecc0bb72bfbcbc22505a3dbb1437"
         "d5518c7bc7aafe1026caa28524ebbfe2"
     );
-    let aux = HmacReset::<Sha224>::new_from_slice(&salt).unwrap();
+    let aux = HmacSha224::new_from_slice(&salt).unwrap();
     let mut key = [0u8; 128];
 
     one_step_kdf::derive_key_into_with(aux, &secret, &fixed_info, &mut key).unwrap();
