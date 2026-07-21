@@ -4,8 +4,10 @@
 use digest::Digest;
 use hex_literal::hex;
 use hmac::{HmacReset, KeyInit};
+
 use sha2::{Sha224, Sha256};
 
+type HmacSha224 = HmacReset<Sha224>;
 type HmacSha256 = HmacReset<Sha256>;
 
 struct HmacFixture<'a> {
