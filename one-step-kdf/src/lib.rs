@@ -87,16 +87,10 @@ where
         return Err(Error::NoOutput);
     }
 
-    // Key length shall be less than or equal to:
-    //
-    // auxiliary output length * (2^32 - 1).
-    if (key.len() as u64) >= A::OutputSize::U64 * u64::from(u32::MAX) {
-        return Err(Error::CounterOverflow);
-    }
+    let output_size = A::OutputSize::USIZE;
+    let block_count = block_count(key.len(), output_size)?;
 
-    let mut counter = 1u32;
-
-    for chunk in key.chunks_mut(A::OutputSize::USIZE) {
+    for (counter, chunk) in (1..=block_count).zip(key.chunks_mut(output_size)) {
         Update::update(&mut aux, &counter.to_be_bytes());
         Update::update(&mut aux, secret);
         Update::update(&mut aux, other_info);
@@ -104,11 +98,17 @@ where
         let block = aux.finalize_fixed_reset();
 
         chunk.copy_from_slice(&block[..chunk.len()]);
-
-        counter = counter.checked_add(1).ok_or(Error::CounterOverflow)?;
     }
 
     Ok(())
+}
+
+fn block_count(key_len: usize, output_size: usize) -> Result<u32, Error> {
+    if output_size == 0 {
+        return Err(Error::CounterOverflow);
+    }
+
+    u32::try_from(key_len.div_ceil(output_size)).map_err(|_| Error::CounterOverflow)
 }
 
 /// One-Step KDF errors.
@@ -135,3 +135,18 @@ impl fmt::Display for Error {
 }
 
 impl core::error::Error for Error {}
+
+#[cfg(test)]
+mod tests {
+    use super::{Error, block_count};
+
+    #[test]
+    fn maximum_block_count_is_accepted() {
+        let maximum = usize::try_from(u32::MAX).expect("usize is at least 32 bits");
+
+        assert_eq!(block_count(maximum, 1), Ok(u32::MAX));
+
+        #[cfg(target_pointer_width = "64")]
+        assert_eq!(block_count(maximum + 1, 1), Err(Error::CounterOverflow));
+    }
+}

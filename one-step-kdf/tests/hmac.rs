@@ -24,13 +24,8 @@ fn test_hmac_key_derivation(fixtures: &[HmacFixture<'_>]) {
 
             let aux = HmacSha256::new_from_slice(fixture.salt).unwrap();
 
-            one_step_kdf::derive_key_into_with(
-                aux,
-                fixture.secret,
-                fixture.other_info,
-                key,
-            )
-            .unwrap();
+            one_step_kdf::derive_key_into_with(aux, fixture.secret, fixture.other_info, key)
+                .unwrap();
 
             assert_eq!(&fixture.expected_key[..key_length], key);
         }
@@ -61,13 +56,7 @@ fn test_hmac_sha256_multiple_blocks() {
     let aux = HmacSha256::new_from_slice(&salt).unwrap();
     let mut key = [0u8; 64];
 
-    one_step_kdf::derive_key_into_with(
-        aux,
-        &secret,
-        &other_info,
-        &mut key,
-    )
-    .unwrap();
+    one_step_kdf::derive_key_into_with(aux, &secret, &other_info, &mut key).unwrap();
 
     assert_eq!(
         key,
@@ -91,20 +80,10 @@ fn generic_aux_matches_digest_api() {
     let mut through_wrapper = [0u8; 64];
     let mut through_aux = [0u8; 64];
 
-    one_step_kdf::derive_key_into::<Sha256>(
-        secret,
-        other_info,
-        &mut through_wrapper,
-    )
-    .unwrap();
+    one_step_kdf::derive_key_into::<Sha256>(secret, other_info, &mut through_wrapper).unwrap();
 
-    one_step_kdf::derive_key_into_with(
-        Sha256::new(),
-        secret,
-        other_info,
-        &mut through_aux,
-    )
-    .unwrap();
+    one_step_kdf::derive_key_into_with(Sha256::new(), secret, other_info, &mut through_aux)
+        .unwrap();
 
     assert_eq!(through_wrapper, through_aux);
 }
